@@ -474,25 +474,78 @@ function getCookie(name) {
     return cookieValue;
 }
 
+let clientSortColumn = 'name';
+let clientSortDirection = 'asc';
+let contactSortColumn = 'name';
+let contactSortDirection = 'asc';
+
 function loadClients() {
-    fetch('/get_clients/')
+    fetch(`/get_clients/?sort=${clientSortColumn}&direction=${clientSortDirection}`)
         .then(response => response.json())
         .then(clients => {
             const tableBody = document.querySelector('#clientTable tbody');
+            const tableHead = document.querySelector('#clientTable thead');
             tableBody.innerHTML = '';
+            tableHead.innerHTML = `
+                <tr>
+                    <th onclick="sortClients('name')">Name ${getSortIndicator('name', clientSortColumn, clientSortDirection)}</th>
+                    <th onclick="sortClients('client_code')">Client Code ${getSortIndicator('client_code', clientSortColumn, clientSortDirection)}</th>
+                    <th onclick="sortClients('linked_contacts')">No. of Linked Contacts ${getSortIndicator('linked_contacts', clientSortColumn, clientSortDirection)}</th>
+                    <th>Action</th>
+                </tr>
+            `;
             clients.forEach(client => addClientToTable(client));
         });
 }
 
+function sortClients(column) {
+    if (column === clientSortColumn) {
+        clientSortDirection = clientSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        clientSortColumn = column;
+        clientSortDirection = 'asc';
+    }
+    loadClients();
+}
+
+
 function loadContacts() {
-    fetch('/get_contacts/')
+    fetch(`/get_contacts/?sort=${contactSortColumn}&direction=${contactSortDirection}`)
         .then(response => response.json())
         .then(contacts => {
             const tableBody = document.querySelector('#contactTable tbody');
+            const tableHead = document.querySelector('#contactTable thead');
             tableBody.innerHTML = '';
+            tableHead.innerHTML = `
+                <tr>
+                    <th onclick="sortContacts('name')">Name ${getSortIndicator('name', contactSortColumn, contactSortDirection)}</th>
+                    <th onclick="sortContacts('surname')">Surname ${getSortIndicator('surname', contactSortColumn, contactSortDirection)}</th>
+                    <th onclick="sortContacts('email')">Email Address ${getSortIndicator('email', contactSortColumn, contactSortDirection)}</th>
+                    <th onclick="sortContacts('linked_clients')">No. of Linked Clients ${getSortIndicator('linked_clients', contactSortColumn, contactSortDirection)}</th>
+                    <th>Action</th>
+                </tr>
+            `;
             contacts.forEach(contact => addContactToTable(contact));
         });
 }
+
+function sortContacts(column) {
+    if (column === contactSortColumn) {
+        contactSortDirection = contactSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        contactSortColumn = column;
+        contactSortDirection = 'asc';
+    }
+    loadContacts();
+}
+
+function getSortIndicator(column, currentSortColumn, currentSortDirection) {
+    if (column === currentSortColumn) {
+        return currentSortDirection === 'asc' ? '▲' : '▼';
+    }
+    return '';
+}
+
 
 function addClientToTable(client) {
     const tableBody = document.querySelector('#clientTable tbody');

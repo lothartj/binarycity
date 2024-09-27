@@ -4,6 +4,7 @@ from .models import Client, Contact
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 import json
 
 @login_required
@@ -58,24 +59,42 @@ def create_contact(request):
 @login_required
 @require_http_methods(["GET"])
 def get_clients(request):
-    clients = Client.objects.all()
+    sort = request.GET.get('sort', 'name')
+    direction = request.GET.get('direction', 'asc')
+    
+    clients = Client.objects.annotate(linked_contacts=Count('contacts'))
+    
+    if direction == 'desc':
+        sort = f'-{sort}'
+    
+    clients = clients.order_by(sort)
+    
     return JsonResponse([{
         'id': client.id,
         'name': client.name,
         'client_code': client.client_code,
-        'linked_contacts': client.contacts.count()
+        'linked_contacts': client.linked_contacts
     } for client in clients], safe=False)
 
 @login_required
 @require_http_methods(["GET"])
 def get_contacts(request):
-    contacts = Contact.objects.all()
+    sort = request.GET.get('sort', 'name')
+    direction = request.GET.get('direction', 'asc')
+    
+    contacts = Contact.objects.annotate(linked_clients=Count('clients'))
+    
+    if direction == 'desc':
+        sort = f'-{sort}'
+    
+    contacts = contacts.order_by(sort)
+    
     return JsonResponse([{
         'id': contact.id,
         'name': contact.name,
         'surname': contact.surname,
         'email': contact.email,
-        'linked_clients': contact.clients.count()
+        'linked_clients': contact.linked_clients
     } for contact in contacts], safe=False)
 
 @login_required
