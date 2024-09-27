@@ -26,6 +26,8 @@ SECRET_KEY = "django-insecure-)_x)^)u0#*#uxmnzg8%pfac3vh%*n@3%0g^%a#_*!)m)h4m3#z
 DEBUG = True
 
 CSRF_TRUSTED_ORIGINS = ['https://binarycity-vrw7.onrender.com']
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 ALLOWED_HOSTS = ['binarycity-vrw7.onrender.com', 'localhost', '127.0.0.1']
 
