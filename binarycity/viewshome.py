@@ -1,17 +1,30 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from .models import Client, Contact
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
 from django.db.models import Count
 import json
 
-@login_required
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('home')
+        else:
+            return render(request, 'login.html', {'error': 'Invalid credentials'})
+    return render(request, 'login.html')
+
+@login_required(login_url='login')
 def home(request):
     return render(request, 'home.html')
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["POST"])
 @csrf_exempt
 def create_client(request):
@@ -30,7 +43,7 @@ def create_client(request):
         'linked_contacts': client.contacts.count()
     })
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["POST"])
 @csrf_exempt
 def create_contact(request):
@@ -56,7 +69,7 @@ def create_contact(request):
         'linked_clients': contact.clients.count()
     })
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["GET"])
 def get_clients(request):
     sort = request.GET.get('sort', 'name')
@@ -76,7 +89,7 @@ def get_clients(request):
         'linked_contacts': client.linked_contacts
     } for client in clients], safe=False)
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["GET"])
 def get_contacts(request):
     sort = request.GET.get('sort', 'name')
@@ -97,7 +110,7 @@ def get_contacts(request):
         'linked_clients': contact.linked_clients
     } for contact in contacts], safe=False)
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["GET"])
 def get_contact(request, id):
     contact = get_object_or_404(Contact, id=id)
@@ -110,7 +123,7 @@ def get_contact(request, id):
         'linked_clients': contact.clients.count()
     })
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["POST"])
 @csrf_exempt
 def update_client(request, id):
@@ -125,7 +138,7 @@ def update_client(request, id):
         'linked_contacts': client.contacts.count()
     })
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["POST"])
 @csrf_exempt
 def update_contact(request, id):
@@ -151,7 +164,7 @@ def update_contact(request, id):
         'linked_clients': contact.clients.count()
     })
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["POST"])
 @csrf_exempt
 def delete_client(request, id):
@@ -159,7 +172,7 @@ def delete_client(request, id):
     client.delete()
     return JsonResponse({'success': True})
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["POST"])
 @csrf_exempt
 def delete_contact(request, id):
@@ -167,7 +180,7 @@ def delete_contact(request, id):
     contact.delete()
     return JsonResponse({'success': True})
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["GET"])
 def get_linked_contacts(request, client_id):
     client = get_object_or_404(Client, id=client_id)
@@ -182,7 +195,7 @@ def get_linked_contacts(request, client_id):
         ]
     })
 
-@login_required
+@login_required(login_url='login')
 @require_http_methods(["GET"])
 def get_linked_clients(request, contact_id):
     contact = get_object_or_404(Contact, id=contact_id)
