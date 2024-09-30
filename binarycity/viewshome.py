@@ -22,7 +22,13 @@ def login_view(request):
 
 @login_required(login_url='login')
 def home(request):
-    return render(request, 'home.html')
+    clients = Client.objects.all()
+    contacts = Contact.objects.all()
+    context = {
+        'clients': clients,
+        'contacts': contacts,
+    }
+    return render(request, 'home.html', context)
 
 @login_required(login_url='login')
 @require_http_methods(["POST"])
