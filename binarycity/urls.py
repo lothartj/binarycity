@@ -18,4 +18,5 @@ urlpatterns = [
     path('get_contact/<int:id>/', viewshome.get_contact, name='get_contact'),
     path('get_linked_contacts/<int:client_id>/', viewshome.get_linked_contacts, name='get_linked_contacts'),
     path('get_linked_clients/<int:contact_id>/', viewshome.get_linked_clients, name='get_linked_clients'),
+    path('unlink_contact/<int:client_id>/<int:contact_id>/', viewshome.unlink_contact, name='unlink_contact'),
 ]

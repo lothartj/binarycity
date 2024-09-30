@@ -429,38 +429,115 @@ function addContactToTable(contact) {
 }
 
 function showLinkedContacts(clientId) {
+    console.log(`Fetching linked contacts for client ID: ${clientId}`);
     fetch(`/get_linked_contacts/${clientId}/`)
         .then(response => response.json())
         .then(data => {
+            console.log('Received data for linked contacts:', JSON.stringify(data, null, 2));
             let content = '<h2>Linked Contacts</h2>';
-            if (data.contacts.length > 0) {
+            if (data.contacts && data.contacts.length > 0) {
                 content += `
-                    <table>
+                    <table id="linkedContactsTable">
                         <thead>
                             <tr>
                                 <th>Name</th>
                                 <th>Surname</th>
                                 <th>Email</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                 `;
                 data.contacts.forEach(contact => {
+                    console.log(`Processing contact:`, JSON.stringify(contact, null, 2));
                     content += `
                         <tr>
                             <td>${contact.name}</td>
                             <td>${contact.surname}</td>
                             <td>${contact.email}</td>
+                            <td><button class="unlink-button" data-client-id="${clientId}" data-contact-id="${contact.id}">Unlink</button></td>
                         </tr>
                     `;
                 });
                 content += '</tbody></table>';
             } else {
+                console.log('No linked contacts found');
                 content += '<p>No linked contacts found.</p>';
             }
+            console.log('Final generated content:', content);
             showPopup(content);
+
+            // Add event listener for unlink buttons
+            const popupContent = document.getElementById('popupContent');
+            popupContent.addEventListener('click', handleUnlinkClick);
+        })
+        .catch(error => {
+            console.error('Error fetching linked contacts:', error);
+            showPopup('<p>Error fetching linked contacts. Please try again.</p>');
         });
 }
+
+function handleUnlinkClick(event) {
+    if (event.target.classList.contains('unlink-button')) {
+        const clientId = event.target.getAttribute('data-client-id');
+        const contactId = event.target.getAttribute('data-contact-id');
+        console.log(`Unlink button clicked. Button dataset:`, event.target.dataset);
+        console.log(`Extracted clientId: ${clientId}, contactId: ${contactId}`);
+        unlinkContact(clientId, contactId);
+    }
+}
+
+function unlinkContact(clientId, contactId) {
+    console.log(`unlinkContact called with clientId: ${clientId}, contactId: ${contactId}`);
+    if (!clientId || !contactId) {
+        console.error(`Invalid client ID (${clientId}) or contact ID (${contactId})`);
+        alert('Error: Invalid client or contact information');
+        return;
+    }
+
+    if (confirm('Are you sure you want to unlink this contact?')) {
+        console.log(`Attempting to unlink contact ${contactId} from client ${clientId}`);
+        fetch(`/unlink_contact/${clientId}/${contactId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Server response data:', data);
+            if (data.error) {
+                throw new Error(data.error);
+            } else if (data.success) {
+                alert('Contact unlinked successfully');
+                // Refresh the linked contacts popup
+                showLinkedContacts(clientId);
+                // Update the client table
+                loadClients();
+                // Update the contact table
+                loadContacts();
+            } else {
+                throw new Error('Unexpected response from server');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(`An error occurred while unlinking the contact: ${error.message}`);
+        });
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const popupContent = document.getElementById('popupContent');
+    popupContent.removeEventListener('click', handleUnlinkClick);
+    popupContent.addEventListener('click', handleUnlinkClick);
+});
 
 function showLinkedClients(contactId) {
     fetch(`/get_linked_clients/${contactId}/`)

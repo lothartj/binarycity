@@ -194,6 +194,7 @@ def get_linked_contacts(request, client_id):
     return JsonResponse({
         'contacts': [
             {
+                'id': contact.id,  # Add this line
                 'name': contact.name,
                 'surname': contact.surname,
                 'email': contact.email
@@ -214,3 +215,41 @@ def get_linked_clients(request, contact_id):
             } for client in clients
         ]
     })
+
+from django.views.decorators.http import require_POST
+import logging
+import traceback
+
+logger = logging.getLogger(__name__)
+@require_POST
+@login_required(login_url='login')
+def unlink_contact(request, client_id, contact_id):
+    logger.info(f"Attempting to unlink contact {contact_id} from client {client_id}")
+    try:
+        client = Client.objects.get(id=client_id)
+        contact = Contact.objects.get(id=contact_id)
+        
+        logger.info(f"Client: {client}, Contact: {contact}")
+        logger.info(f"Contact's clients before unlinking: {list(contact.clients.all())}")
+        
+        if client not in contact.clients.all():
+            logger.warning(f"Client {client_id} is not linked to contact {contact_id}")
+            return JsonResponse({'error': 'Client is not linked to this contact'}, status=400)
+        
+        contact.clients.remove(client)
+        contact.save()
+        
+        logger.info(f"Contact's clients after unlinking: {list(contact.clients.all())}")
+        logger.info(f"Successfully unlinked contact {contact_id} from client {client_id}")
+        
+        return JsonResponse({'success': True})
+    except Client.DoesNotExist:
+        logger.error(f"Client with id {client_id} not found")
+        return JsonResponse({'error': 'Client not found'}, status=404)
+    except Contact.DoesNotExist:
+        logger.error(f"Contact with id {contact_id} not found")
+        return JsonResponse({'error': 'Contact not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Unexpected error while unlinking contact: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JsonResponse({'error': f'An unexpected error occurred: {str(e)}'}, status=500)
